@@ -113,17 +113,17 @@ M.poll_dark_mode = function(callback, sync)
 			-- async jobstart
 			local stdout, stderr = "", ""
 			vim.fn.jobstart(M.state.query_command, {
-				stderr_buffered = true,
-				stdout_buffered = true,
-				on_stderr = function(_, data, _)
-					stderr = table.concat(data, " ")
-				end,
-				on_stdout = function(_, data, _)
-					stdout = table.concat(data, " ")
-				end,
-				on_exit = function(_, _, _)
-					callback(stdout, stderr, false)
-				end,
+				-- async jobstart MUST NOT run in a fast event: defer it
+				vim.schedule(function()
+					local stdout, stderr = "", ""
+					vim.fn.jobstart(M.state.query_command, {
+						stderr_buffered = true,
+						stdout_buffered = true,
+						on_stderr = function(_, data, _) stderr = table.concat(data, " ") end,
+						on_stdout = function(_, data, _) stdout = table.concat(data, " ") end,
+						on_exit = function(_, _, _) callback(stdout, stderr, false) end,
+					})
+				end)
 			})
 		end
 	end
