@@ -75,23 +75,31 @@ M.init = function()
 		end
 		M.state.query_command = query_command
 	elseif M.state.system == "Linux" then
-		if vim.fn.executable("dbus-send") == 0 then
-			error(
-				"auto-dark-mode.nvim: `dbus-send` is not available. The Linux implementation of auto-dark-mode.nvim relies on `dbus-send` being on the `$PATH`."
-			)
-		end
+		-- Detect whether we have a real desktop session
+	  local has_display = (vim.env.DISPLAY and #vim.env.DISPLAY > 0) or (vim.env.WAYLAND_DISPLAY and #vim.env.WAYLAND_DISPLAY > 0)
 
-		M.state.query_command = {
-			"dbus-send",
-			"--session",
-			"--print-reply=literal",
-			"--reply-timeout=1000",
-			"--dest=org.freedesktop.portal.Desktop",
-			"/org/freedesktop/portal/desktop",
-			"org.freedesktop.portal.Settings.Read",
-			"string:org.freedesktop.appearance",
-			"string:color-scheme",
-		}
+	  -- Headless / raw SSH: do NOT query anything; return empty string so parser falls back
+	  if not has_display then
+	    M.state.query_command = { "sh", "-lc", "printf ''" }
+	  else
+			if vim.fn.executable("dbus-send") == 0 then
+				error(
+					"auto-dark-mode.nvim: `dbus-send` is not available. The Linux implementation of auto-dark-mode.nvim relies on `dbus-send` being on the `$PATH`."
+				)
+			end
+
+			M.state.query_command = {
+				"dbus-send",
+				"--session",
+				"--print-reply=literal",
+				"--reply-timeout=1000",
+				"--dest=org.freedesktop.portal.Desktop",
+				"/org/freedesktop/portal/desktop",
+				"org.freedesktop.portal.Settings.Read",
+				"string:org.freedesktop.appearance",
+				"string:color-scheme",
+			}
+		end
 	elseif M.state.system == "Windows_NT" or M.state.system == "WSL" then
 		local reg = "reg.exe"
 
