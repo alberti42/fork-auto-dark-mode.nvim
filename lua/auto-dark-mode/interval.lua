@@ -17,7 +17,7 @@ local uv = vim.uv or vim.loop
 local function parse_query_response(stdout, stderr)
 	if M.state.system == "Linux" then
 		if stderr ~= "" then
-			return nil;
+			return nil
 		end
 
 		-- https://github.com/flatpak/xdg-desktop-portal/blob/c0f0eb103effdcf3701a1bf53f12fe953fbf0b75/data/org.freedesktop.impl.portal.Settings.xml#L32-L46
@@ -51,7 +51,7 @@ local function sync_theme(appearance, sync)
 		return
 	end
 
-	local asynchronous = not sync 
+	local asynchronous = not sync
 
 	M.current_appearance = appearance
 	if M.current_appearance == "dark" then
@@ -74,28 +74,31 @@ end
 ---@param callback? fun(stdout: string, stderr: string, sync: boolean)
 ---@param sync? boolean
 M.poll_dark_mode = function(callback, sync)
-	if sync == nil then sync = false end
+	if sync == nil then
+		sync = false
+	end
 	if callback == nil then
 		callback = function() end
 	end
 
-	local cb -- wrapper for callback function
-	if sync then
-		cb = nil
-	else
-		cb = function(data)
-			if callback ~= nil then
-				callback(data.stdout or "", data.stderr or "", false)
+	if vim.system then
+		-- Neovim ≥ 0.10 → support vim.system(...)
+
+		local cb -- wrapper for callback function to be passed to vim.system(...)
+		if sync then
+			cb = nil
+		else
+			cb = function(data)
+				if callback ~= nil then
+					callback(data.stdout or "", data.stderr or "", false)
+				end
 			end
 		end
-	end
 
-	if vim.system then
-		-- Neovim ≥ 0.10
 		local proc = vim.system(M.state.query_command, { text = true }, cb)
 		if sync then
 			-- No callback here. Read stdout/stderr from :wait() result.
-			local res  = proc:wait()
+			local res = proc:wait()
 			callback(res.stdout or "", res.stderr or "", true)
 		end
 	else
@@ -119,11 +122,17 @@ M.poll_dark_mode = function(callback, sync)
 					vim.fn.jobstart(M.state.query_command, {
 						stderr_buffered = true,
 						stdout_buffered = true,
-						on_stderr = function(_, data, _) stderr = table.concat(data, " ") end,
-						on_stdout = function(_, data, _) stdout = table.concat(data, " ") end,
-						on_exit = function(_, _, _) callback(stdout, stderr, false) end,
+						on_stderr = function(_, data, _)
+							stderr = table.concat(data, " ")
+						end,
+						on_stdout = function(_, data, _)
+							stdout = table.concat(data, " ")
+						end,
+						on_exit = function(_, _, _)
+							callback(stdout, stderr, false)
+						end,
 					})
-				end)
+				end),
 			})
 		end
 	end

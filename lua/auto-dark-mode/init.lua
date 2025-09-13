@@ -43,7 +43,7 @@ local function validate_options(options)
 			set_dark_mode = { options.set_dark_mode, "function" },
 			set_light_mode = { options.set_light_mode, "function" },
 			update_interval = { options.update_interval, "number" },
-			sync_start      = { options.sync_start, "boolean" },
+			sync_start = { options.sync_start, "boolean" },
 		})
 	end
 
